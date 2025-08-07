@@ -9,6 +9,18 @@ import cv2 #cv2 kütüphanesini importlar.
 from matplotlib import pyplot as plt
 
 resim = cv2.imread("C:/ornekresim/AE86.jpeg") #resimi okuma kısmı "'dan sonra,0 koyarsak sb oluyor
+gri_resim = cv2.cvtColor(resim, cv2.COLOR_BGR2GRAY)
+_, esiklenmis_resim = cv2.threshold(gri_resim, 127, 255, cv2.THRESH_BINARY)
+
+
+cv2.imshow("Orijinal", resim)
+cv2.imshow("Gri Tonlama", gri_resim)
+cv2.imshow("Eşiklenmiş", esiklenmis_resim)
+
+plt.imshow(gri_resim, cmap="gray")
+plt.title("Matplotlib ile Gri")
+plt.show()
+
 
 cv2.namedWindow("resim",cv2.WINDOW_NORMAL)#yeni pencerede açabiliyorz boyutu değiştirebiliyrz.
 cv2.imshow("resim",resim) #resimi gösterme
