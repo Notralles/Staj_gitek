@@ -48,4 +48,5 @@ elif k ==ord("q"):
     print("Gri ve eşiklenmiş resimler 'outputs' klasörüne kaydedildi!")
     
 
+
 cv2.destroyWindow("Resim Penceresi") #pencereyi kapatma
