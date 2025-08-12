@@ -1,0 +1,92 @@
+# -*- coding: utf-8 -*-
+"""
+PyQt5 ile Başlat/Bitir butonlu yüz tespiti
+"""
+
+import sys
+import cv2
+import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QImage, QPixmap
+
+prototxt_path = "C:/resderp/deploy.prototxt"
+model_path = "C:/resderp/res10_300x300_ssd_iter_140000.caffemodel"
+
+class FaceDetectionApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PyQt5 Yüz Tespiti")
+        self.setGeometry(200, 200, 800, 600)
+
+        # Arayüz elemanları
+        self.label = QLabel("Kamera kapalı")
+        self.label.setStyleSheet("background-color: black; color: white; font-size: 18px;")
+        self.label.setFixedSize(640, 480)
+
+        self.btn_start = QPushButton("Başlat")
+        self.btn_stop = QPushButton("Bitir")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.btn_start)
+        layout.addWidget(self.btn_stop)
+        self.setLayout(layout)
+
+        # Event bağlantıları
+        self.btn_start.clicked.connect(self.start_camera)
+        self.btn_stop.clicked.connect(self.stop_camera)
+
+        # OpenCV ve zamanlayıcı
+        self.cap = None
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_frame)
+
+        # Model yükle
+        self.net = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
+
+    def start_camera(self):
+        self.cap = cv2.VideoCapture(0)
+        self.timer.start(30)  # 30ms'de bir frame güncelle
+
+    def update_frame(self):
+        ret, frame = self.cap.read()
+        if not ret:
+            return
+
+        (h, w) = frame.shape[:2]
+        blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
+                                     (300, 300), (104.0, 177.0, 123.0))
+        self.net.setInput(blob)
+        detections = self.net.forward()
+
+        for i in range(0, detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+            if confidence > 0.5:
+                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = box.astype("int")
+                cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                text = f"{confidence*100:.1f}%"
+                y = startY - 10 if startY - 10 > 10 else startY + 10
+                cv2.putText(frame, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.45, (0, 255, 0), 2)
+
+        # OpenCV -> PyQt görüntü formatı
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.label.setPixmap(QPixmap.fromImage(qt_image))
+
+    def stop_camera(self):
+        self.timer.stop()
+        if self.cap:
+            self.cap.release()
+        self.label.setText("Kamera kapalı")
+        self.label.setStyleSheet("background-color: black; color: white; font-size: 18px;")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = FaceDetectionApp()
+    window.show()
+    sys.exit(app.exec_())

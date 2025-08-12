@@ -25,17 +25,19 @@ for idx, path in enumerate(image_paths):
     img_contour = img.copy()
 
     for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-        boyut = max(w, h)
-        x_centered = x + w // 2 - boyut // 2
-        y_centered = y + h // 2 - boyut // 2
+        area = cv2.contourArea(contour)
+        if area > 15000:  # Buradaki sınırı ihtiyaca göre ayarlayabilirsin
+            x, y, w, h = cv2.boundingRect(contour)
+            boyut = max(w, h)
+            x_centered = x + w // 2 - boyut // 2
+            y_centered = y + h // 2 - boyut // 2
 
-        x_start = max(0, x_centered)
-        y_start = max(0, y_centered)
-        x_end = min(img.shape[1], x_start + boyut)
-        y_end = min(img.shape[0], y_start + boyut)
+            x_start = max(0, x_centered)
+            y_start = max(0, y_centered)
+            x_end = min(img.shape[1], x_start + boyut)
+            y_end = min(img.shape[0], y_start + boyut)
 
-        cv2.rectangle(img_contour, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
+            cv2.rectangle(img_contour, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
 
     filename = os.path.join(save_path, f"ay{idx+1}_contour.jpg")
     cv2.imwrite(filename, img_contour)
